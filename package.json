@@ -13,6 +13,7 @@
     "@hookform/resolvers": "^2.6.0",
     "@types/react-transition-group": "^4.4.2",
     "apollo-upload-client": "^16.0.0",
+    "axios": "^0.21.3",
     "bootstrap": "^5.0.2",
     "graphql": "^15.5.2",
     "next": "11.0.1",

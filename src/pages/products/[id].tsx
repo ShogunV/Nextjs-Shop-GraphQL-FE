@@ -1,9 +1,23 @@
 import Head from 'next/head'
 import Image from 'next/image'
-import api from '../../helpers/api'
 import { GetServerSideProps } from 'next'
 import Link from 'next/link'
 import { useCartContext } from '../../context/cart'
+import gql from 'graphql-tag'
+import client from '../../graphql'
+
+const PRODUCT = gql`
+  query Product($id: ID) {
+    product(id: $id) {
+      id
+      title
+      description
+      price
+      discount
+      image
+    }
+  }
+`;
 
 // This gets called on every request
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -12,8 +26,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   if (params) {
     const { id } = params
     // Fetch data from external API
-    const res = await api.get(`/products/${id}`)
-    product = res.data.product;
+    const { data } = await client.query({ query: PRODUCT, variables: { id: id || null } })
+    product = data.product;
   }
 
   // Pass data to the page via props

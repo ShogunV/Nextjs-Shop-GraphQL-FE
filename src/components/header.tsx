@@ -1,9 +1,20 @@
+import { useQuery } from "@apollo/client";
+import gql from "graphql-tag";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useGetTotalQuantity } from "../context/cart";
 import api from "../helpers/api";
 import { logOut, useGetUserEmail, useGetUserRole, useIsLoggedIn } from "../helpers/auth";
 import { ProductCategory } from "../types";
+
+const CATEGORIES = gql`
+  query Categories {
+    categories {
+      id
+      title
+    }
+  }
+`;
 
 export default function Header(props: any) {
   const [mounted, setMounted] = useState(false);
@@ -14,14 +25,18 @@ export default function Header(props: any) {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
 
+  const { data } = useQuery(CATEGORIES)
+
   useEffect(() => {
     setMounted(true)
-    getMenuItems()
   }, [])
 
-  const getMenuItems = () => {
-    api.get('categories').then(res => setMenuItems(res.data.categories)).catch(e => console.log(e))
-  }
+  useEffect(() => {
+    if (!data) {
+      return
+    }
+    setMenuItems(data.categories)
+  }, [data])
 
   const handleLogOut = () => {
     api.post('logout').then(res => {

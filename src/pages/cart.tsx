@@ -10,13 +10,28 @@ import { Toast } from 'primereact/toast'
 import { confirmDialog } from 'primereact/confirmdialog';
 import { useIsLoggedIn } from '../helpers/auth'
 import { useEffect } from 'react'
+import gql from 'graphql-tag'
+import client from '../graphql'
+
+const PRODUCTS = gql`
+  query Products {
+    products(category: null) {
+      id
+      title
+      description
+      price
+      discount
+      image
+    }
+  }
+`;
 
 // This gets called on every request
 export const getServerSideProps: GetServerSideProps = async () => {
   // Fetch data from external API
-  const res = await api.get('/products')
+  const { data } = await client.query({ query: PRODUCTS });
 
-  const products = res.data.products;
+  const products = data.products;
 
   // Pass data to the page via props
   return { props: { products } }
@@ -60,7 +75,7 @@ export default function Cart() {
       acceptLabel: 'OK',
       rejectLabel: 'Cancel',
       accept: () => onAccept(),
-      reject: () => {}
+      reject: () => { }
     });
   };
 
