@@ -1,6 +1,5 @@
 import Head from 'next/head'
 import React, { useRef, useState } from 'react'
-import api from '../helpers/api'
 import { InputText } from 'primereact/inputtext'
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
@@ -8,6 +7,17 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from "yup";
 import { Toast } from 'primereact/toast';
+import gql from 'graphql-tag';
+import { useMutation } from '@apollo/client';
+
+const FORGOT_PASSWORD = gql`
+  mutation ForgotPassword($email: String!) {
+    forgotPassword(input: { email: $email }) {
+      error
+      data
+    }
+  }
+`;
 
 type ForgotPasswordData = {
   email: string;
@@ -24,24 +34,20 @@ export default function Login() {
     resolver: yupResolver(schema)
   })
 
+  const [forgotPassword] = useMutation(FORGOT_PASSWORD, {
+    onError(error) {
+      setLoading(false)
+      return toast.current?.show({ severity: 'error', summary: 'Error Message', detail: 'Something went wrong!' })
+    },
+    onCompleted(data) {
+      setLoading(false)
+      return toast.current?.show({ severity: 'success', summary: 'Success Message', detail: data.forgotPassword.data })
+    }
+  });
+
   const onSubmit = (data: ForgotPasswordData) => {
     setLoading(true)
-    api.post('forgot-password', data).then(res => {
-      setLoading(false)
-      return toast.current?.show({ severity: 'success', summary: 'Success Message', detail: res.data.data })
-    }).catch(e => {
-      setLoading(false)
-      const { error, data, errors } = e.response.data
-      if (error) {
-        return toast.current?.show({ severity: 'error', summary: 'Error Message', detail: data })
-      }
-      if (errors) {
-        const allErrors = Object.keys(errors).map(key => errors[key]).flat()
-        return allErrors.forEach(error => toast.current?.show({ severity: 'error', summary: 'Error Message', detail: error }))
-      }
-
-      return toast.current?.show({ severity: 'error', summary: 'Error Message', detail: 'Something went wrong!' })
-    })
+    forgotPassword({ variables: { email: data.email } })
   }
 
   const getFormErrorMessage = (name: string) => {

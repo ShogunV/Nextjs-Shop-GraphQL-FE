@@ -1,6 +1,5 @@
 import Head from 'next/head'
 import React, { useRef, useState } from 'react'
-import api from '../helpers/api'
 import { useRouter } from 'next/router'
 import { InputText } from 'primereact/inputtext'
 import { Card } from 'primereact/card';
@@ -9,6 +8,17 @@ import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from "yup";
 import { Toast } from 'primereact/toast'
+import gql from 'graphql-tag'
+import { useMutation } from '@apollo/client'
+
+const RESET_PASSWORD = gql`
+  mutation ResetPassword($email: String!, $password: String!, $passwordConfirmation: String!, $token: String!) {
+    resetPassword(input: { email: $email, password: $password, password_confirmation: $passwordConfirmation, token: $token }) {
+      error
+      data
+    }
+  }
+`;
 
 type ResetPasswordData = {
   email: string;
@@ -33,24 +43,20 @@ export default function ResetPassword() {
     resolver: yupResolver(schema)
   })
 
+  const [resetPassword] = useMutation(RESET_PASSWORD, {
+    onError(error) {
+      setLoading(false)
+      return toast.current?.show({ severity: 'error', summary: 'Error Message', detail: 'Something went wrong!' })
+    },
+    onCompleted(data) {
+      setLoading(false)
+      return toast.current?.show({ severity: 'success', summary: 'Success Message', detail: data.resetPassword.data })
+    }
+  });
+
   const onSubmit = (data: ResetPasswordData) => {
     setLoading(true)
-    api.post('reset-password', { ...data, token: token }).then(res => {
-      setLoading(false)
-      return toast.current?.show({ severity: 'success', summary: 'Success Message', detail: res.data.data })
-    }).catch(e => {
-      setLoading(false)
-      const { error, data, errors } = e.response.data
-      if (error) {
-        return toast.current?.show({ severity: 'error', summary: 'Error Message', detail: data })
-      }
-      if (errors) {
-        const allErrors = Object.keys(errors).map(key => errors[key]).flat()
-        return allErrors.forEach(error => toast.current?.show({ severity: 'error', summary: 'Error Message', detail: error }))
-      }
-
-      return toast.current?.show({ severity: 'error', summary: 'Error Message', detail: 'Something went wrong!' })
-    })
+    resetPassword({ variables: { email: data.email, password: data.password, passwordConfirmation: data.password_confirmation, token } })
   }
 
   const getFormErrorMessage = (name: string) => {

@@ -52,7 +52,7 @@ export default function Register() {
       setLoading(false)
       toast.current?.show({ severity: 'error', summary: 'Error Message', detail: error })
     },
-    onCompleted(data){
+    onCompleted(data) {
       setLoading(false)
       logIn(data.register)
     }

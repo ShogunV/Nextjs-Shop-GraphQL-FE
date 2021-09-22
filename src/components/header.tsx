@@ -47,7 +47,7 @@ export default function Header(props: any) {
   }, [data])
 
   const [logout, { error, data: logoutData }] = useMutation(LOGOUT, {
-    onError(error){
+    onError(error) {
       console.log(error)
     },
     onCompleted(data) {
