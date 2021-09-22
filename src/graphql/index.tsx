@@ -5,7 +5,8 @@ import { onError } from "@apollo/client/link/error";
 const graphqlUri = process.env.NEXT_PUBLIC_GRAPHQL_URL
 
 const httpLink = new createUploadLink({
-  uri: graphqlUri
+  uri: graphqlUri,
+  credentials: 'include',
 });
 
 // Log any GraphQL errors or network error that occurred

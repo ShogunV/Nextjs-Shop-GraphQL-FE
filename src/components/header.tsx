@@ -1,9 +1,8 @@
-import { useQuery } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client";
 import gql from "graphql-tag";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useGetTotalQuantity } from "../context/cart";
-import api from "../helpers/api";
 import { logOut, useGetUserEmail, useGetUserRole, useIsLoggedIn } from "../helpers/auth";
 import { ProductCategory } from "../types";
 
@@ -12,6 +11,15 @@ const CATEGORIES = gql`
     categories {
       id
       title
+    }
+  }
+`;
+
+const LOGOUT = gql`
+  mutation Logout {
+    logout {
+      error
+      data
     }
   }
 `;
@@ -38,11 +46,18 @@ export default function Header(props: any) {
     setMenuItems(data.categories)
   }, [data])
 
-  const handleLogOut = () => {
-    api.post('logout').then(res => {
-      setShowProfileDropdown(false)
+  const [logout, { error, data: logoutData }] = useMutation(LOGOUT, {
+    onError(error){
+      console.log(error)
+    },
+    onCompleted(data) {
       logOut()
-    }).catch(e => console.log(e))
+    }
+  });
+
+  const handleLogOut = () => {
+    setShowProfileDropdown(false)
+    logout()
   }
 
   const MenuItems = () => {

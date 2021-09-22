@@ -1,7 +1,6 @@
 import Head from 'next/head'
 import Link from 'next/link'
 import React, { FC, useRef, useState } from 'react'
-import api from '../helpers/api'
 import { logIn } from '../helpers/auth'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -10,6 +9,19 @@ import { Card } from 'primereact/card'
 import { InputText } from 'primereact/inputtext'
 import { Button } from 'primereact/button'
 import { Toast } from 'primereact/toast'
+import gql from 'graphql-tag'
+import { useMutation } from '@apollo/client'
+
+const LOGIN = gql`
+  mutation Login($email: String!, $password: String!) {
+    login(input: { email: $email, password: $password }) {
+      id
+      name
+      email
+      role
+    }
+  }
+`;
 
 type LoginData = {
   email: string;
@@ -28,29 +40,20 @@ export default function Login() {
     resolver: yupResolver(schema)
   })
 
+  const [login] = useMutation(LOGIN, {
+    onError(error) {
+      setLoading(false)
+      toast.current?.show({ severity: 'error', summary: 'Error Message', detail: error })
+    },
+    onCompleted(data) {
+      setLoading(false)
+      logIn(data.login)
+    }
+  });
+
   const onSubmit = (data: LoginData) => {
     setLoading(true)
-    api.get('csrf-cookie').then(() => {
-      api.post('login', data).then((res): any => {
-        setLoading(false)
-        return logIn(res.data.user)
-      }).catch(e => {
-        setLoading(false)
-        const { error, data, errors } = e.response.data
-        if (error) {
-          return toast.current?.show({ severity: 'error', summary: 'Error Message', detail: data })
-        }
-        if (errors) {
-          const allErrors = Object.keys(errors).map(key => errors[key]).flat()
-          return allErrors.forEach(error => toast.current?.show({ severity: 'error', summary: 'Error Message', detail: error }))
-        }
-
-        return toast.current?.show({ severity: 'error', summary: 'Error Message', detail: 'Something went wrong!' })
-      })
-    }).catch(e => {
-      setLoading(false)
-      return toast.current?.show({ severity: 'error', summary: 'Error Message', detail: 'Something went wrong!' })
-    })
+    login({ variables: { email: data.email, password: data.password } })
   }
 
   const LoginCardFooter: FC = () => {

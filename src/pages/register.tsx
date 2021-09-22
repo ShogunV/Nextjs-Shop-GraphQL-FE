@@ -2,7 +2,6 @@ import Head from 'next/head'
 import Link from 'next/link'
 import React, { FC, useRef, useState } from 'react'
 import { logIn } from '../helpers/auth'
-import api from '../helpers/api'
 import { InputText } from 'primereact/inputtext'
 import { Card } from 'primereact/card'
 import { Button } from 'primereact/button'
@@ -10,8 +9,22 @@ import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from "yup";
 import { Toast } from 'primereact/toast'
+import gql from 'graphql-tag'
+import { useMutation } from '@apollo/client'
+
+const REGISTER = gql`
+  mutation Register($name: String, $email: String!, $password: String!, $passwordConfirmation: String!) {
+    register(input: { name: $name email: $email, password: $password, password_confirmation: $passwordConfirmation }) {
+      id
+      name
+      email
+      role
+    }
+  }
+`;
 
 type RegisterData = {
+  name: String;
   email: string;
   password: string;
   password_confirmation: string;
@@ -34,29 +47,20 @@ export default function Register() {
     resolver: yupResolver(schema)
   })
 
+  const [registerUser] = useMutation(REGISTER, {
+    onError(error) {
+      setLoading(false)
+      toast.current?.show({ severity: 'error', summary: 'Error Message', detail: error })
+    },
+    onCompleted(data){
+      setLoading(false)
+      logIn(data.register)
+    }
+  })
+
   const onSubmit = (data: RegisterData) => {
     setLoading(true)
-    api.get('csrf-cookie').then(() => {
-      api.post('register', data).then((res): any => {
-        setLoading(false)
-        return logIn(res.data.user)
-      }).catch(e => {
-        setLoading(false)
-        const { error, data, errors } = e.response.data
-        if (error) {
-          return toast.current?.show({ severity: 'error', summary: 'Error Message', detail: data })
-        }
-        if (errors) {
-          const allErrors = Object.keys(errors).map(key => errors[key]).flat()
-          return allErrors.forEach(error => toast.current?.show({ severity: 'error', summary: 'Error Message', detail: error }))
-        }
-
-        return toast.current?.show({ severity: 'error', summary: 'Error Message', detail: 'Something went wrong!' })
-      })
-    }).catch(e => {
-      setLoading(false)
-      return toast.current?.show({ severity: 'error', summary: 'Error Message', detail: 'Something went wrong!' })
-    })
+    registerUser({ variables: { name: data.name, email: data.email, password: data.password, passwordConfirmation: data.password_confirmation } })
   }
 
   const RegisterCardFooter: FC = () => {
