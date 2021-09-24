@@ -34,7 +34,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   return { props: { product } }
 }
 
-export default function Home(props: any) {
+export default function Product(props: any) {
   const backEndUrl = process.env.NEXT_PUBLIC_BACK_END_URL
   const { addToCart } = useCartContext()
   const product = props.product;

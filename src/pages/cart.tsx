@@ -1,6 +1,5 @@
 import Head from 'next/head'
 import Link from 'next/link'
-import api from '../helpers/api'
 import { GetServerSideProps } from 'next'
 import React, { useRef } from 'react'
 import { useCartContext, useGetTotalPrice, useGetTotalQuantity } from '../context/cart'
@@ -12,6 +11,7 @@ import { useIsLoggedIn } from '../helpers/auth'
 import { useEffect } from 'react'
 import gql from 'graphql-tag'
 import client from '../graphql'
+import { useMutation } from '@apollo/client'
 
 const PRODUCTS = gql`
   query Products {
@@ -22,6 +22,15 @@ const PRODUCTS = gql`
       price
       discount
       image
+    }
+  }
+`;
+
+const CHECKOUT = gql`
+  mutation Checkout($cart: [CartProduct], $total: Int!, $totalQuantity: Int!) {
+    checkout(input: {cart: $cart, total: $total, totalQuantity: $totalQuantity}) {
+      error
+      data
     }
   }
 `;
@@ -43,6 +52,15 @@ export default function Cart() {
   const totalPrice = useGetTotalPrice()
   const totalQuantity = useGetTotalQuantity()
   const isLoggedIn = useIsLoggedIn()
+
+  const [checkout] = useMutation(CHECKOUT, {
+    onError(error) {
+      console.log(error)
+    },
+    onCompleted(data) {
+      return router.push(data.checkout.data)
+    }
+  })
 
   useEffect(() => {
     const { success, canceled } = router.query
@@ -80,9 +98,7 @@ export default function Cart() {
   };
 
   const onAccept = () => {
-    return api.post('checkout-session', { total: totalPrice, totalQuantity, cart }).then(res => {
-      return router.push(res.data['url'])
-    }).catch(e => console.log(e))
+    return checkout({ variables: { cart, totalQuantity, total: Number(totalPrice) } })
   }
 
   const handleCheckout = () => {
