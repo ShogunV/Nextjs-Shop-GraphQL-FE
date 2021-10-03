@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { GetServerSideProps } from 'next'
 import React, { useEffect, useState } from 'react'
 import { useCartContext } from '../context/cart'
-import { Product } from '../types'
+import { CartProduct, Product } from '../types'
 import gql from 'graphql-tag'
 import client from '../graphql'
 
@@ -99,7 +99,7 @@ export default function Home(props: any) {
                           <div className="discount-price fs-5 fw-bold">{`${discountPrice} €`}</div>
                         </div>
                       }
-                      <button type="button" className="btn btn-success cart" onClick={() => addToCart(product)}><i className="fa fa-shopping-cart" aria-hidden="true"></i><span className="glyphicon glyphicon-shopping-cart"></span>Add to cart</button>
+                      <button type="button" className="btn btn-success cart" onClick={() => addToCart({ ...product, quantity: 1 } as CartProduct)}><i className="fa fa-shopping-cart" aria-hidden="true"></i><span className="glyphicon glyphicon-shopping-cart"></span>Add to cart</button>
                     </div>
                   </div>
                 </div>
