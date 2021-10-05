@@ -17,6 +17,25 @@ import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import Image from 'next/image'
 import { Product, ProductCategory } from '../../types'
+import gql from 'graphql-tag';
+import client from '../../graphql';
+
+const PRODUCTS_AND_CATEGORIES = gql`
+  query AdminProductsAndCategories {
+    adminProducts {
+      id
+      title
+      description
+      price
+      discount
+      image
+    }
+    categories {
+      id
+      title
+    }
+  }
+`;
 
 type ProductErrors = {
   title: string[];
@@ -31,16 +50,14 @@ type ProductErrors = {
 export const getServerSideProps: GetServerSideProps = async (context) => {
   // Fetch data from external API
   try {
-    const res = await api.get('admin/products', {
-      headers: context?.req?.headers?.cookie ? { cookie: context.req.headers.cookie } : undefined,
-    })
+    const { data, error } = await client.query({ query: PRODUCTS_AND_CATEGORIES, context: { headers: context?.req?.headers?.cookie ? { cookie: context.req.headers.cookie } : undefined } });
 
-    if (res.data.error) {
+    if (error) {
       return { redirect: { destination: '/', permanent: false } }
     }
 
-    const products = res.data.products;
-    const categories = res.data.categories;
+    const products = data.adminProducts;
+    const categories = data.categories;
     // Pass data to the page via props
     return { props: { products, categories } }
   } catch (err) {

@@ -13,6 +13,17 @@ import { Toolbar } from 'primereact/toolbar';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { CartProduct, ProductCategory } from '../../types';
+import gql from 'graphql-tag';
+import client from '../../graphql';
+
+const CATEGORIES = gql`
+  query Categories {
+    categories {
+      id
+      title
+    }
+  }
+`;
 
 type CategoryErrors = {
   title: string[]
@@ -22,15 +33,13 @@ type CategoryErrors = {
 export const getServerSideProps: GetServerSideProps = async (context) => {
   // Fetch data from external API
   try {
-    const res = await api.get('admin/categories', {
-      headers: context?.req?.headers?.cookie ? { cookie: context.req.headers.cookie } : undefined,
-    })
+    const { data, error } = await client.query({ query: CATEGORIES, context: { headers: context?.req?.headers?.cookie ? { cookie: context.req.headers.cookie } : undefined } })
 
-    if (res.data.error) {
+    if (error) {
       return { redirect: { destination: '/', permanent: false } }
     }
 
-    const categories = res.data.categories;
+    const categories = data.categories;
     // Pass data to the page via props
     return { props: { categories } }
   } catch (err) {

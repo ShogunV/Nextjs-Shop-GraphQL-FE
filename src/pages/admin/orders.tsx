@@ -1,23 +1,34 @@
 import Head from 'next/head'
-import api from '../../helpers/api'
 import { GetServerSideProps } from 'next'
 import React from 'react'
 import { Accordion, AccordionTab } from 'primereact/accordion';
 import { CartProduct, Order } from '../../types'
+import gql from 'graphql-tag';
+import client from '../../graphql';
+
+const ORDERS = gql`
+  query Orders {
+    adminOrders {
+      id
+      created_at
+      user
+      total
+      data
+    }
+  }
+`;
 
 // This gets called on every request
 export const getServerSideProps: GetServerSideProps = async (context) => {
   // Fetch data from external API
   try {
-    const res = await api.get('admin/orders', {
-      headers: context?.req?.headers?.cookie ? { cookie: context.req.headers.cookie } : undefined,
-    })
+    const { data, error } = await client.query({ query: ORDERS, context: { headers: context?.req?.headers?.cookie ? { cookie: context.req.headers.cookie } : undefined } });
 
-    if (res.data.error) {
+    if (error) {
       return { redirect: { destination: '/', permanent: false } }
     }
 
-    const orders = res.data.orders;
+    const orders = data.adminOrders;
     // Pass data to the page via props
     return { props: { orders } }
   } catch (err) {
@@ -49,47 +60,50 @@ export default function Orders(props: any) {
 
         <div className="card">
           <Accordion multiple>
-            {orders.map((order: Order) => (
-              <AccordionTab key={order.id} header={`${order.user}  -  ${order.created_at}`}>
-                <table className="table table-striped">
-                  <thead>
-                    <tr>
-                      <th scope="col">#</th>
-                      <th scope="col">Product</th>
-                      <th scope="col">Quantity</th>
-                      <th scope="col">Before Discount</th>
-                      <th scope="col">Discount</th>
-                      <th scope="col">After Discount</th>
-                      <th scope="col">Price</th>
-                    </tr>
-                  </thead>
+            {orders.map((order: Order) => {
+              const orderData = JSON.parse(order['data'])
+              return (
+                <AccordionTab key={order.id} header={`${order.user}  -  ${order.created_at}`}>
+                  <table className="table table-striped">
+                    <thead>
+                      <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Product</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Before Discount</th>
+                        <th scope="col">Discount</th>
+                        <th scope="col">After Discount</th>
+                        <th scope="col">Price</th>
+                      </tr>
+                    </thead>
 
-                  <tbody>
+                    <tbody>
 
-                    {order['data'].map((item: CartProduct) => {
-                      const discountPrice = getDiscountPrice(item)
-                      const productsPrice = getProductsPrice(item)
-                      return (
-                        <tr key={item.id}>
-                          <td></td>
-                          <td>{item['title']}</td>
-                          <td>{item['quantity']}</td>
-                          <td>{item['price'] + ' €'}</td>
-                          <td>{item['discount']}%</td>
-                          <td>{discountPrice + ' €'}</td>
-                          <td>{productsPrice + ' €'}</td>
-                        </tr>
-                      )
-                    })}
+                      {orderData.map((item: CartProduct) => {
+                        const discountPrice = getDiscountPrice(item)
+                        const productsPrice = getProductsPrice(item)
+                        return (
+                          <tr key={item.id}>
+                            <td></td>
+                            <td>{item['title']}</td>
+                            <td>{item['quantity']}</td>
+                            <td>{item['price'].toFixed(2) + ' €'}</td>
+                            <td>{item['discount']}%</td>
+                            <td>{discountPrice + ' €'}</td>
+                            <td>{productsPrice + ' €'}</td>
+                          </tr>
+                        )
+                      })}
 
-                    <tr>
-                      <td colSpan={6}>Total Price</td>
-                      <td>{order.total + ' €'}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </AccordionTab>
-            ))}
+                      <tr>
+                        <td colSpan={6}>Total Price</td>
+                        <td>{order.total.toFixed(2) + ' €'}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </AccordionTab>
+              )
+            })}
           </Accordion>
         </div>
       </main>

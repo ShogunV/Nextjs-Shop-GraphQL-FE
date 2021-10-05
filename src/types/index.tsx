@@ -32,7 +32,7 @@ export type Order = {
   user: string;
   created_at: string;
   total: number;
-  data: CartProduct[]
+  data: string
 }
 
 export type CartProduct = {

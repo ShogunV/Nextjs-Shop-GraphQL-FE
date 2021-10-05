@@ -1,24 +1,33 @@
 import Head from 'next/head'
-import api from '../../helpers/api'
 import { GetServerSideProps } from 'next'
 import React from 'react'
 import { DataTable } from 'primereact/datatable'
 import { Column } from 'primereact/column'
 import { ExtendedUser } from '../../types'
+import gql from 'graphql-tag'
+import client from '../../graphql'
+
+const USERS = gql`
+  query Users {
+    adminUsers {
+      id
+      name
+      email
+    }
+  }
+`;
 
 // This gets called on every request
 export const getServerSideProps: GetServerSideProps = async (context) => {
   // Fetch data from external API
   try {
-    const res = await api.get('admin/users', {
-      headers: context?.req?.headers?.cookie ? { cookie: context.req.headers.cookie } : undefined,
-    })
+    const { data, error } = await client.query({ query: USERS, context: { headers: context?.req?.headers?.cookie ? { cookie: context.req.headers.cookie } : undefined } });
 
-    if (res.data.error) {
+    if (error) {
       return { redirect: { destination: '/', permanent: false } }
     }
 
-    const users = res.data.users;
+    const users = data.adminUsers;
     // Pass data to the page via props
     return { props: { users } }
   } catch (err) {
